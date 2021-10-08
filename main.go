@@ -1,25 +1,23 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"log"
 	"net/http"
+	"task1/api"
 	db "task1/database"
 )
 
-var client = db.GetClient()
-
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "hello there")
-}
-
 func handleRequests() {
-	http.HandleFunc("/", homePage)
+	http.HandleFunc("/users/", api.HandleUsers)
+	http.HandleFunc("/posts/", api.HandlePosts)
 
 	log.Fatal(http.ListenAndServe(":9000", nil))
 
 }
 
 func main() {
+	db.CreateClient()
+
 	handleRequests()
 }
