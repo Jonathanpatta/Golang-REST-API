@@ -89,8 +89,6 @@ func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 
 	fmt.Println(userId)
 
-	// decodingError := cursor.Decode(&users)
-
 	for cursor.Next(ctx) {
 		var user bson.M
 		decodingError := cursor.Decode(&user)
@@ -102,8 +100,6 @@ func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 			http.Error(res, "couldn't get user", http.StatusBadGateway)
 			return
 		}
-
-		fmt.Println(user)
 	}
 
 	if dbError != nil {
@@ -117,25 +113,12 @@ func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 
 	page, _ = strconv.Atoi(pageString)
 
-	fmt.Println(page)
 	users = paginate(users, page, 2)
 
 	json.NewEncoder(res).Encode(users)
 }
 
 func CreatePost(res http.ResponseWriter, req *http.Request) {
-
-	//var client = database.GetClient()
-	//fmt.Println(client)
-
-	//fmt.Println(req.Body)
-
-	// id, error := primitive.ObjectIDFromHex(userId)
-	// fmt.Print(id)
-	// if error != nil {
-	// 	http.Error(res, "invalid user Id", http.StatusNotFound)
-	// 	return
-	// }
 
 	var post structures.Post
 
