@@ -28,6 +28,7 @@ func HandleUsers(res http.ResponseWriter, req *http.Request) {
 
 	if !auth.Authenticate(tokenString) {
 		http.Error(res, "invalid api auth token", http.StatusMethodNotAllowed)
+		return
 	}
 
 	// /users method = "POST"
