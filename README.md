@@ -10,6 +10,7 @@ This project was built in one day, and used to create a simple REST API in golan
 
 This project includes features like
 
+- Authentication using api tokens
 - pagination
 - password hashing
 - CRUD operations

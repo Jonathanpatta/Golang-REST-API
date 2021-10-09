@@ -16,12 +16,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"task1/auth"
 )
 
 //Users Controller
 func HandleUsers(res http.ResponseWriter, req *http.Request) {
 	var url = req.URL.String()
 	var splitUrl = strings.Split(url, "/")
+
+	var tokenString = req.URL.Query().Get("token")
+
+	if !auth.Authenticate(tokenString) {
+		http.Error(res, "invalid api auth token", http.StatusMethodNotAllowed)
+	}
 
 	// /users method = "POST"
 	if len(splitUrl) == 3 {
@@ -84,8 +91,6 @@ func CreateUser(res http.ResponseWriter, req *http.Request) {
 }
 
 func GetUser(res http.ResponseWriter, req *http.Request, Id string) {
-
-	fmt.Print("get user")
 
 	var user structures.User
 

@@ -13,6 +13,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"task1/auth"
 )
 
 //Post Controller
@@ -23,6 +24,11 @@ func HandlePosts(res http.ResponseWriter, req *http.Request) {
 	var pureurl = strings.Split(url, "?")[0]
 	var splitUrl = strings.Split(pureurl, "/")
 
+	var tokenString = req.URL.Query().Get("token")
+
+	if !auth.Authenticate(tokenString) {
+		http.Error(res, "invalid api auth token", http.StatusMethodNotAllowed)
+	}
 	//Manual Routing
 
 	// /posts/ method="POST"
