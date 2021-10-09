@@ -52,14 +52,18 @@ func CreatePost(res http.ResponseWriter, req *http.Request) {
 	// 	return
 	// }
 
-	fmt.Println(req.Body)
-
 	var post structures.Post
 
-	json.NewDecoder(req.Body).Decode(&post)
+	var decoder = json.NewDecoder(req.Body)
+	decoder.DisallowUnknownFields()
+	decoder.Decode(&post)
+
+	req.ParseForm()
+	caption := req.PostForm.Get("Caption")
+	fmt.Println("caption:", caption)
+
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.GetCollection("Posts")
-	fmt.Println(collection)
 
 	post.Id = primitive.NewObjectID()
 	post.PostedTimeStamp = primitive.NewDateTimeFromTime(time.Now())
@@ -68,6 +72,8 @@ func CreatePost(res http.ResponseWriter, req *http.Request) {
 	fmt.Println(result)
 	fmt.Println(error)
 	fmt.Print("create Post")
+
+	fmt.Println(post)
 
 	json.NewEncoder(res).Encode(post)
 
