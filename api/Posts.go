@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"task1/database"
 	"task1/structures"
@@ -18,7 +19,8 @@ import (
 func HandlePosts(res http.ResponseWriter, req *http.Request) {
 
 	var url = req.URL.String()
-	var splitUrl = strings.Split(url, "/")
+	var pureurl = strings.Split(url, "?")[0]
+	var splitUrl = strings.Split(pureurl, "/")
 
 	if len(splitUrl) == 3 {
 		if req.Method == "POST" {
@@ -47,6 +49,27 @@ func HandlePosts(res http.ResponseWriter, req *http.Request) {
 	}
 
 	http.Error(res, "invalid Url", http.StatusNotFound)
+}
+
+func paginate(x []bson.M, skip int, size int) []bson.M {
+	limit := func() int {
+		if skip+size > len(x) {
+			return len(x)
+		} else {
+			return skip + size
+		}
+
+	}
+
+	start := func() int {
+		if skip > len(x) {
+			return len(x)
+		} else {
+			return skip
+		}
+
+	}
+	return x[start():limit()]
 }
 
 func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
@@ -88,6 +111,14 @@ func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 		http.Error(res, "couldn't get user due to db error", http.StatusBadGateway)
 		return
 	}
+
+	var pageString = req.URL.Query().Get("page")
+	var page = 0
+
+	page, _ = strconv.Atoi(pageString)
+
+	fmt.Println(page)
+	users = paginate(users, page, 2)
 
 	json.NewEncoder(res).Encode(users)
 }
