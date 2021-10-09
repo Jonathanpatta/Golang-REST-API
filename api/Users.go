@@ -23,7 +23,9 @@ func HandleUsers(res http.ResponseWriter, req *http.Request) {
 
 	fmt.Println(len(splitUrl))
 
-	if len(splitUrl) == 2 {
+	fmt.Println(req.Method)
+
+	if len(splitUrl) == 3 {
 		if req.Method == "POST" {
 			CreateUser(res, req)
 			return
@@ -39,7 +41,7 @@ func HandleUsers(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	fmt.Fprint(res, "Invalid Url")
+	http.Error(res, "invalid Url", http.StatusNotFound)
 
 }
 
@@ -49,7 +51,7 @@ func CreateUser(res http.ResponseWriter, req *http.Request) {
 
 	id, error := primitive.ObjectIDFromHex(userId)
 	if error != nil {
-		fmt.Fprint(res, "invalid user Id")
+		http.Error(res, "invalid user Id", http.StatusNotFound)
 		return
 	}
 
