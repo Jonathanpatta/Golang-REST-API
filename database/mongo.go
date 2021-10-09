@@ -14,8 +14,6 @@ import (
 
 var Client *mongo.Client
 
-var dbname = "instagram-db"
-
 func CreateClient() {
 
 	url.QueryEscape(config.DB_USERNAME)
@@ -33,7 +31,6 @@ func CreateClient() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, clientOptions)
-	client.Database("instagram-db").Collection("")
 
 	Client = client
 
@@ -43,7 +40,7 @@ func CreateClient() {
 }
 
 func GetCollection(collection string) *mongo.Collection {
-	var col = Client.Database(dbname).Collection(collection)
+	var col = Client.Database(config.DB_NAME).Collection(collection)
 
 	return col
 }

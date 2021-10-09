@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	//"fmt"
 	"net/http"
 
 	"task1/database"
@@ -19,30 +18,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//Users Controller
 func HandleUsers(res http.ResponseWriter, req *http.Request) {
-	//var id = primitive.NewObjectID()
-	//var user = structures.User{Id: id, Name: "Jonathan", Email: "jonathan@gmail.com", Password: "lsajfsdafjl"}
 	var url = req.URL.String()
 	var splitUrl = strings.Split(url, "/")
 
-	fmt.Println(splitUrl)
-
-	fmt.Println(len(splitUrl))
-
-	fmt.Println(req.Method)
-
+	// /users method = "POST"
 	if len(splitUrl) == 3 {
 		if req.Method == "POST" {
 			CreateUser(res, req)
 			return
 		}
 	}
+	// /users/userId method = "GET"
 	if len(splitUrl) == 3 {
 		var userId = splitUrl[2]
 		if req.Method == "GET" {
-			fmt.Println(userId)
 			GetUser(res, req, userId)
-
 			return
 		}
 	}
@@ -53,15 +45,19 @@ func HandleUsers(res http.ResponseWriter, req *http.Request) {
 
 func CreateUser(res http.ResponseWriter, req *http.Request) {
 
+	//Create User Handler
+
 	var user structures.User
 
 	var decoder = json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
 	decoder.Decode(&user)
 
+	//Creating New ObjectId for User
 	user.Id = primitive.NewObjectID()
 
 	var plainTextPassword = user.Password
+	//Hashing password
 	hashedPassword, hashingError := bcrypt.GenerateFromPassword([]byte(plainTextPassword), 14)
 
 	if hashingError != nil {
@@ -71,7 +67,8 @@ func CreateUser(res http.ResponseWriter, req *http.Request) {
 
 	user.Password = string(hashedPassword)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := database.GetCollection("Users")
 
 	result, insertError := collection.InsertOne(ctx, user)
@@ -99,7 +96,8 @@ func GetUser(res http.ResponseWriter, req *http.Request, Id string) {
 		return
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := database.GetCollection("Users")
 	result := collection.FindOne(ctx, bson.M{"_id": id})
 
@@ -109,6 +107,8 @@ func GetUser(res http.ResponseWriter, req *http.Request, Id string) {
 		http.Error(res, "couldn't get user", http.StatusBadGateway)
 		return
 	}
+
+	//omitting password when displaying users
 
 	user.Password = ""
 

@@ -15,18 +15,25 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+//Post Controller
+
 func HandlePosts(res http.ResponseWriter, req *http.Request) {
 
 	var url = req.URL.String()
 	var pureurl = strings.Split(url, "?")[0]
 	var splitUrl = strings.Split(pureurl, "/")
 
+	//Manual Routing
+
+	// /posts/ method="POST"
 	if len(splitUrl) == 3 {
 		if req.Method == "POST" {
 			CreatePost(res, req)
 			return
 		}
 	}
+
+	// /posts/postid method="get"
 	if len(splitUrl) == 3 {
 		var postId = splitUrl[2]
 		if req.Method == "GET" {
@@ -37,6 +44,7 @@ func HandlePosts(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// /posts/user/userid method="get"
 	if len(splitUrl) == 4 {
 		if splitUrl[2] == "user" {
 			var userId = splitUrl[3]
@@ -47,10 +55,13 @@ func HandlePosts(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	//if condition is not met then url returns invalid url
 	http.Error(res, "invalid Url", http.StatusNotFound)
 }
 
 func paginate(x []bson.M, skip int, size int) []bson.M {
+
+	// pagination function for list of objects
 	limit := func() int {
 		if skip+size > len(x) {
 			return len(x)
@@ -73,21 +84,32 @@ func paginate(x []bson.M, skip int, size int) []bson.M {
 
 func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 
+	// /posts/user/id handler
+
 	var users []bson.M
 
 	id, idError := primitive.ObjectIDFromHex(userId)
 
+	//invalid Id
 	if idError != nil {
 		http.Error(res, "Invalid Id", http.StatusBadRequest)
 		return
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := database.GetCollection("Posts")
 	cursor, dbError := collection.Find(ctx, bson.M{"UserId": id})
 
-	fmt.Println(userId)
+	//Database Error handling
 
+	if dbError != nil {
+		fmt.Println(dbError)
+		http.Error(res, "Couldn't get user due to db error", http.StatusBadGateway)
+		return
+	}
+
+	//loop through every element and decode it
 	for cursor.Next(ctx) {
 		var user bson.M
 		decodingError := cursor.Decode(&user)
@@ -96,16 +118,12 @@ func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 
 		if decodingError != nil {
 			fmt.Println(decodingError)
-			http.Error(res, "couldn't get user", http.StatusBadGateway)
+			http.Error(res, "Couldn't get user", http.StatusBadGateway)
 			return
 		}
 	}
 
-	if dbError != nil {
-		fmt.Println(dbError)
-		http.Error(res, "couldn't get user due to db error", http.StatusBadGateway)
-		return
-	}
+	//parsing the page Query String parameter to get the page number
 
 	var pageString = req.URL.Query().Get("page")
 	var page = 0
@@ -119,6 +137,8 @@ func GetUserPosts(res http.ResponseWriter, req *http.Request, userId string) {
 
 func CreatePost(res http.ResponseWriter, req *http.Request) {
 
+	//Create Post Handler
+
 	var post structures.Post
 
 	var decoder = json.NewDecoder(req.Body)
@@ -129,24 +149,30 @@ func CreatePost(res http.ResponseWriter, req *http.Request) {
 	caption := req.PostForm.Get("Caption")
 	fmt.Println("caption:", caption)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	//Getting Collection from database
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := database.GetCollection("Posts")
 
+	//Assigning a newobject ID
 	post.Id = primitive.NewObjectID()
 	post.PostedTimeStamp = primitive.NewDateTimeFromTime(time.Now())
-	result, error := collection.InsertOne(ctx, post)
+	result, postInsertionError := collection.InsertOne(ctx, post)
 
-	fmt.Println(result)
-	fmt.Println(error)
-	fmt.Print("create Post")
+	//insertion error handling
+	if postInsertionError != nil {
+		fmt.Println(result)
+		http.Error(res, "Couldn't insert Post", http.StatusBadGateway)
 
-	fmt.Println(post)
+	}
 
 	json.NewEncoder(res).Encode(post)
 
 }
 
 func GetPost(res http.ResponseWriter, req *http.Request, Id string) {
+
+	// /posts/id Handler
 
 	var post structures.Post
 
@@ -157,7 +183,8 @@ func GetPost(res http.ResponseWriter, req *http.Request, Id string) {
 		return
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := database.GetCollection("Posts")
 	result := collection.FindOne(ctx, bson.M{"_id": id})
 
